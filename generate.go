@@ -45,7 +45,7 @@ type Context struct {
 
 type Page interface {
 	GetType() string
-	GetFinalHTML() string
+	GetFinalHTML() template.HTML
 	GetTitle() string
 }
 
@@ -54,21 +54,21 @@ type MarkdownPage struct {
 	Date        time.Time
 	Category    string
 	Filename    string
-	RawMarkdown string // This is the Markdown sans header
-	FinalHTML   string // This is the final HTML after the Markdown parser
+	RawMarkdown string        // This is the Markdown sans header
+	FinalHTML   template.HTML // This is the final HTML after the Markdown parser
 }
 
 type HTMLPage struct {
 	RawHTML   string
 	Filename  string
-	FinalHTML string
+	FinalHTML template.HTML
 }
 
 func (p MarkdownPage) GetType() string {
 	return TypeMarkdown
 }
 
-func (p MarkdownPage) GetFinalHTML() string {
+func (p MarkdownPage) GetFinalHTML() template.HTML {
 	return p.FinalHTML
 }
 
@@ -80,7 +80,7 @@ func (p HTMLPage) GetType() string {
 	return TypeHTML
 }
 
-func (p HTMLPage) GetFinalHTML() string {
+func (p HTMLPage) GetFinalHTML() template.HTML {
 	return p.FinalHTML
 }
 
@@ -278,7 +278,7 @@ func (c *GenerateCommand) Run(args []string) int {
 		}
 
 		post := NewMarkdownPage(file.Filename, string(content))
-		post.FinalHTML = GenerateHTMLFromMarkdown(post.RawMarkdown)
+		post.FinalHTML = template.HTML(GenerateHTMLFromMarkdown(post.RawMarkdown))
 		posts = append(posts, post)
 	}
 
@@ -293,15 +293,15 @@ func (c *GenerateCommand) Run(args []string) int {
 		var page Page
 		if file.Filetype == TypeMarkdown {
 			md := NewMarkdownPage(file.Filename, string(content))
-			md.FinalHTML = GenerateHTMLFromMarkdown(md.RawMarkdown)
+			md.FinalHTML = template.HTML(GenerateHTMLFromMarkdown(md.RawMarkdown))
 			page = md
 		} else {
 			html := NewHTMLPage(file.Filename, string(content))
-			html.FinalHTML = string(content)
+			html.FinalHTML = template.HTML(string(content))
 			page = html
 		}
 
-		t := template.Must(template.New("page").Parse(string(indexCache) + string(pageCache) + page.GetFinalHTML()))
+		t := template.Must(template.New("page").Parse(string(indexCache) + string(pageCache) + string(page.GetFinalHTML())))
 
 		// TODO: make custom io.Writer to write the template directly to a file
 		b := &bytes.Buffer{}
@@ -312,8 +312,6 @@ func (c *GenerateCommand) Run(args []string) int {
 			panic(err)
 		}
 	}
-
-	fmt.Printf("%#v", context)
 
 	for _, post := range context.Posts {
 		context.CurrentPage = post

@@ -195,6 +195,10 @@ func (c *GenerateCommand) Run(args []string) int {
 	// Merge root files so one loop is needed
 	rootFilesToRead := append(rootMarkdownFiles, rootHTMLFiles...)
 
+	// build post pages and store in []MarkdownPage maintain order (maybe consider ordering by date?)
+	// build global context struct
+	// build and render pages with the global context.
+
 	for _, file := range rootFilesToRead {
 		content, err := ioutil.ReadFile(file.SourceFile)
 		if err != nil {
@@ -218,6 +222,14 @@ func (c *GenerateCommand) Run(args []string) int {
 		if err != nil {
 			panic(err)
 		}
+	}
+
+	for _, file := range postMarkdownFiles {
+		content, err := ioutil.ReadFile(file.SourceFile)
+		if err != nil {
+			log.Fatalf("There was an error reading the file: %s", err)
+		}
+		page := 
 	}
 
 	return 0

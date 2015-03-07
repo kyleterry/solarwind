@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/extemporalgenome/slug"
 	"github.com/mitchellh/cli"
 	"github.com/russross/blackfriday"
 )
@@ -30,7 +31,7 @@ const (
 
 type FileMapper struct {
 	SourceFile      string
-	DestinationPath string
+	DestinationFile string
 	Filename        string
 	Filetype        string
 }
@@ -39,12 +40,13 @@ type Context struct {
 	SiteTitle       string `json:"site_title"`
 	SiteDescription string `json:"site_description"`
 	Posts           []MarkdownPage
-	CurrentPage     Pager
+	CurrentPage     MarkdownPage
 }
 
-type Pager interface {
+type Page interface {
 	GetType() string
 	GetFinalHTML() string
+	GetTitle() string
 }
 
 type MarkdownPage struct {
@@ -70,12 +72,20 @@ func (p MarkdownPage) GetFinalHTML() string {
 	return p.FinalHTML
 }
 
+func (p MarkdownPage) GetTitle() string {
+	return p.Title
+}
+
 func (p HTMLPage) GetType() string {
 	return TypeHTML
 }
 
 func (p HTMLPage) GetFinalHTML() string {
 	return p.FinalHTML
+}
+
+func (p HTMLPage) GetTitle() string {
+	return ""
 }
 
 // NewMarkdownPage takes a string of raw markdown content with an optional header
@@ -125,6 +135,7 @@ func NewMarkdownPage(filename string, rawContent string) MarkdownPage {
 			}
 		}
 	}
+
 	if len(sd) == 0 {
 		log.Fatalf("Something went wrong parsing %s: Possible Malformed header. Reached EOF.", filename)
 	}
@@ -171,14 +182,14 @@ func ListFiles(dir string, extension string) []FileMapper {
 	for _, f := range files {
 		fm := FileMapper{}
 		fm.Filetype = extension
-		fm.Filename = filepath.Base(f)
+		fm.Filename = strings.Split(filepath.Base(f), ".")[0]
 		switch dir {
 		case DefaultContentDir:
 			fm.SourceFile = f
-			fm.DestinationPath = DefaultDestinationDir
+			fm.DestinationFile = path.Join(DefaultDestinationDir, fm.Filename+".html")
 		case path.Join(DefaultContentDir, "posts"):
 			fm.SourceFile = f
-			fm.DestinationPath = path.Join(DefaultDestinationDir, "posts")
+			fm.DestinationFile = path.Join(DefaultDestinationDir, "posts", fm.Filename+".html")
 		}
 		fileMaps = append(fileMaps, fm)
 	}
@@ -220,13 +231,15 @@ func (c *GenerateCommand) Synopsis() string {
 }
 
 func (c *GenerateCommand) Run(args []string) int {
-	if _, err := os.Stat(Solarwindfile); err == nil {
+	if _, err := os.Stat(Solarwindfile); err != nil {
 		log.Fatal("You need to create a `Solarwindfile` in the directory you'd like to serve as your site.")
 	}
 
+	log.Println("Making public directory")
 	MakePublicDir(DefaultDestinationDir)
 	context := NewContextFromSolarwindfile(DefaultSolarwindfilePath)
 
+	log.Println("Caching templates")
 	// Cache base template content
 	indexCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "index.html"))
 	if err != nil {
@@ -243,9 +256,12 @@ func (c *GenerateCommand) Run(args []string) int {
 		log.Fatal("There was an error reading the post.html file")
 	}
 
+	log.Println("Collecting content")
 	rootMarkdownFiles := ListFiles(DefaultContentDir, TypeMarkdown)
 	rootHTMLFiles := ListFiles(DefaultContentDir, TypeHTML)
 	postMarkdownFiles := ListFiles(DefaultPostsDir, TypeMarkdown)
+	fileCount := len(rootMarkdownFiles) + len(rootHTMLFiles) + len(postMarkdownFiles)
+	log.Printf("Found %d files", fileCount)
 
 	// Merge root files so one loop is needed
 	rootFilesToRead := append(rootMarkdownFiles, rootHTMLFiles...)
@@ -254,6 +270,7 @@ func (c *GenerateCommand) Run(args []string) int {
 	// build global context struct
 	// build and render pages with the global context.
 
+	log.Println("Parsing posts")
 	for _, file := range postMarkdownFiles {
 		content, err := ioutil.ReadFile(file.SourceFile)
 		if err != nil {
@@ -261,17 +278,19 @@ func (c *GenerateCommand) Run(args []string) int {
 		}
 
 		post := NewMarkdownPage(file.Filename, string(content))
+		post.FinalHTML = GenerateHTMLFromMarkdown(post.RawMarkdown)
 		posts = append(posts, post)
 	}
 
 	context.Posts = posts
 
+	log.Println("Parsing pages and generating site")
 	for _, file := range rootFilesToRead {
 		content, err := ioutil.ReadFile(file.SourceFile)
 		if err != nil {
 			log.Fatalf("There was an error reading the file: %s", err)
 		}
-		var page Pager
+		var page Page
 		if file.Filetype == TypeMarkdown {
 			md := NewMarkdownPage(file.Filename, string(content))
 			md.FinalHTML = GenerateHTMLFromMarkdown(md.RawMarkdown)
@@ -282,19 +301,35 @@ func (c *GenerateCommand) Run(args []string) int {
 			page = html
 		}
 
-		context.CurrentPage = page
-
 		t := template.Must(template.New("page").Parse(string(indexCache) + string(pageCache) + page.GetFinalHTML()))
 
 		// TODO: make custom io.Writer to write the template directly to a file
 		b := &bytes.Buffer{}
-		t.Execute(b, nil)
+		t.Execute(b, context)
 
-		err = ioutil.WriteFile(DefaultDestinationDir, b.Bytes(), 0755)
+		err = ioutil.WriteFile(file.DestinationFile, b.Bytes(), 0755)
 		if err != nil {
 			panic(err)
 		}
 	}
+
+	fmt.Printf("%#v", context)
+
+	for _, post := range context.Posts {
+		context.CurrentPage = post
+		t := template.Must(template.New("page").Parse(string(indexCache) + string(postCache)))
+
+		b := &bytes.Buffer{}
+		t.Execute(b, context)
+
+		destinationFile := path.Join(DefaultDestinationDir, "posts", slug.Slug(post.Title)+".html")
+		err = ioutil.WriteFile(destinationFile, b.Bytes(), 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	log.Println("Done!")
 
 	return 0
 }

@@ -27,17 +27,17 @@ func init() {
 	}
 
 	CurrentPath = dir
-	DefaultContentDir := path.Join(dir, "content")
-	DefaultPostsDir := path.Join(DefaultContentDir, "posts")
-	DefaultDestinationDir := path.Join(dir, "public")
-	DefaultTemplateDir := path.Join(dir, "templates")
-	DefaultSolarwindfilePath := path.Join(CurrentPath, Solarwindfile)
+	DefaultContentDir = path.Join(dir, "content")
+	DefaultPostsDir = path.Join(DefaultContentDir, "posts")
+	DefaultDestinationDir = path.Join(CurrentPath, "public")
+	DefaultTemplateDir = path.Join(dir, "templates")
+	DefaultSolarwindfilePath = path.Join(CurrentPath, Solarwindfile)
 
 	// Sanity check. Make sure a couple of these things exist
-	for _, dir := range []string{DefaultContentDir, DefaultPostsDir, DefaultTemplateDir} {
-		if _, err := os.Stat(dir); err != nil {
+	for _, node := range []string{DefaultSolarwindfilePath, DefaultContentDir, DefaultPostsDir, DefaultTemplateDir} {
+		if _, err := os.Stat(node); err != nil {
 			if os.IsNotExist(err) {
-				log.Fatalf("%s does not exist. It must exist to continue generating a site.", dir)
+				log.Fatalf("%s does not exist. It must exist to continue generating a site.", node)
 			} else {
 				panic(err)
 			}

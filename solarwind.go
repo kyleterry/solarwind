@@ -10,11 +10,12 @@ import (
 )
 
 var (
-	CurrentPath           string
-	DefaultContentDir     string
-	DefaultPostsDir       string
-	DefaultDestinationDir string
-	DefaultTemplateDir    string
+	CurrentPath              string
+	DefaultContentDir        string
+	DefaultPostsDir          string
+	DefaultDestinationDir    string
+	DefaultTemplateDir       string
+	DefaultSolarwindfilePath string
 )
 
 const Solarwindfile = "Solarwindfile"
@@ -30,6 +31,7 @@ func init() {
 	DefaultPostsDir := path.Join(DefaultContentDir, "posts")
 	DefaultDestinationDir := path.Join(dir, "public")
 	DefaultTemplateDir := path.Join(dir, "templates")
+	DefaultSolarwindfilePath := path.Join(CurrentPath, Solarwindfile)
 
 	// Sanity check. Make sure a couple of these things exist
 	for _, dir := range []string{DefaultContentDir, DefaultPostsDir, DefaultTemplateDir} {

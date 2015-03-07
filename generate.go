@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -23,9 +24,28 @@ var (
 )
 
 const (
-	ExtensionMD   = "md"
-	ExtensionHTML = "html"
+	TypeMarkdown = "md"
+	TypeHTML     = "html"
 )
+
+type FileMapper struct {
+	SourceFile      string
+	DestinationPath string
+	Filename        string
+	Filetype        string
+}
+
+type Context struct {
+	SiteTitle       string `json:"site_title"`
+	SiteDescription string `json:"site_description"`
+	Posts           []MarkdownPage
+	CurrentPage     Pager
+}
+
+type Pager interface {
+	GetType() string
+	GetFinalHTML() string
+}
 
 type MarkdownPage struct {
 	Title       string
@@ -38,20 +58,24 @@ type MarkdownPage struct {
 
 type HTMLPage struct {
 	RawHTML   string
+	Filename  string
 	FinalHTML string
 }
 
-type FileMapper struct {
-	SourceFile      string
-	DestinationPath string
-	Filename        string
-	Filetype        string
+func (p MarkdownPage) GetType() string {
+	return TypeMarkdown
 }
 
-type MainContext struct {
-	SiteTitle       string
-	SiteDescription string
-	Posts           []MarkdownPage
+func (p MarkdownPage) GetFinalHTML() string {
+	return p.FinalHTML
+}
+
+func (p HTMLPage) GetType() string {
+	return TypeHTML
+}
+
+func (p HTMLPage) GetFinalHTML() string {
+	return p.FinalHTML
 }
 
 // NewMarkdownPage takes a string of raw markdown content with an optional header
@@ -106,6 +130,36 @@ func NewMarkdownPage(filename string, rawContent string) MarkdownPage {
 	}
 	page.RawMarkdown = strings.Join(sd, "\n")
 	return page
+}
+
+func NewHTMLPage(filename string, rawContent string) HTMLPage {
+	return HTMLPage{RawHTML: rawContent, Filename: filename}
+}
+
+func NewContext() *Context {
+	return &Context{}
+}
+
+func NewContextFromSolarwindfile(path string) *Context {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal("There was a problem reading the Solarwindfile")
+	}
+
+	context := NewContext()
+	if err := json.Unmarshal(content, &context); err != nil {
+		log.Fatal("There was a problem parsing the Solarwindfile")
+	}
+
+	if context.SiteTitle == "" {
+		context.SiteTitle = "Solarwind Site"
+	}
+
+	if context.SiteDescription == "" {
+		context.SiteDescription = "This is a static site generated with Solarwind: https://github.com/kyleterry/solarwind"
+	}
+
+	return context
 }
 
 func ListFiles(dir string, extension string) []FileMapper {
@@ -171,6 +225,7 @@ func (c *GenerateCommand) Run(args []string) int {
 	}
 
 	MakePublicDir(DefaultDestinationDir)
+	context := NewContextFromSolarwindfile(DefaultSolarwindfilePath)
 
 	// Cache base template content
 	indexCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "index.html"))
@@ -188,9 +243,9 @@ func (c *GenerateCommand) Run(args []string) int {
 		log.Fatal("There was an error reading the post.html file")
 	}
 
-	rootMarkdownFiles := ListFiles(DefaultContentDir, ExtensionMD)
-	rootHTMLFiles := ListFiles(DefaultContentDir, ExtensionHTML)
-	postMarkdownFiles := ListFiles(DefaultPostsDir, ExtensionMD)
+	rootMarkdownFiles := ListFiles(DefaultContentDir, TypeMarkdown)
+	rootHTMLFiles := ListFiles(DefaultContentDir, TypeHTML)
+	postMarkdownFiles := ListFiles(DefaultPostsDir, TypeMarkdown)
 
 	// Merge root files so one loop is needed
 	rootFilesToRead := append(rootMarkdownFiles, rootHTMLFiles...)
@@ -199,20 +254,37 @@ func (c *GenerateCommand) Run(args []string) int {
 	// build global context struct
 	// build and render pages with the global context.
 
+	for _, file := range postMarkdownFiles {
+		content, err := ioutil.ReadFile(file.SourceFile)
+		if err != nil {
+			log.Fatalf("There was an error reading the file: %s", err)
+		}
+
+		post := NewMarkdownPage(file.Filename, string(content))
+		posts = append(posts, post)
+	}
+
+	context.Posts = posts
+
 	for _, file := range rootFilesToRead {
 		content, err := ioutil.ReadFile(file.SourceFile)
 		if err != nil {
 			log.Fatalf("There was an error reading the file: %s", err)
 		}
-		var html string
-		if file.Filetype == ExtensionMD {
-			page := NewMarkdownPage("example.md", string(content))
-			html = GenerateHTMLFromMarkdown(page.RawMarkdown)
+		var page Pager
+		if file.Filetype == TypeMarkdown {
+			md := NewMarkdownPage(file.Filename, string(content))
+			md.FinalHTML = GenerateHTMLFromMarkdown(md.RawMarkdown)
+			page = md
 		} else {
-			html = string(content)
+			html := NewHTMLPage(file.Filename, string(content))
+			html.FinalHTML = string(content)
+			page = html
 		}
 
-		t := template.Must(template.New("page").Parse(string(indexCache) + string(pageCache) + html))
+		context.CurrentPage = page
+
+		t := template.Must(template.New("page").Parse(string(indexCache) + string(pageCache) + page.GetFinalHTML()))
 
 		// TODO: make custom io.Writer to write the template directly to a file
 		b := &bytes.Buffer{}
@@ -222,14 +294,6 @@ func (c *GenerateCommand) Run(args []string) int {
 		if err != nil {
 			panic(err)
 		}
-	}
-
-	for _, file := range postMarkdownFiles {
-		content, err := ioutil.ReadFile(file.SourceFile)
-		if err != nil {
-			log.Fatalf("There was an error reading the file: %s", err)
-		}
-		page := 
 	}
 
 	return 0

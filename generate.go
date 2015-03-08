@@ -223,33 +223,39 @@ func CopyAssets(source, dest string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	filepath.Walk(source, func(p string, info os.FileInfo, err error) error {
+	err = filepath.Walk(source, func(p string, info os.FileInfo, err error) error {
 		if p == source {
 			return nil
 		}
+
 		if info.IsDir() {
 			os.Mkdir(path.Join(dest, info.Name()), info.Mode())
 			return nil
 		}
+
 		new_path := strings.Replace(p, source, dest, 1)
+
 		r, err := os.Open(p)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		defer r.Close()
 		w, err := os.Create(new_path)
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if _, err := io.Copy(w, r); err != nil {
 			w.Close()
-			log.Fatal(err)
+			return err
 		}
 		return nil
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // GenerateCommand code

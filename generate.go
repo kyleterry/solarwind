@@ -107,6 +107,7 @@ func (p HTMLPage) GetTitle() string {
 // :kyleterry: TODO: thing about returning an error here if something goes wrong
 // during parsing of the header. Currently `log.Fatal`s.
 func NewMarkdownPage(filename string, rawContent string) MarkdownPage {
+	log.Printf("Parsing %s", filename)
 	sd := strings.Split(rawContent, "\n")
 	page := MarkdownPage{}
 	page.Filename = filename
@@ -117,11 +118,9 @@ func NewMarkdownPage(filename string, rawContent string) MarkdownPage {
 				sd = sd[index+1:]
 				break
 			}
-			sl := strings.Split(line, ": ")
-			if len(sl) > 2 {
-				log.Fatal("Header should be in the format of \"key: value string\".")
-			}
 
+			sl := strings.SplitN(line, ":", 2)
+			sl[1] = strings.Trim(sl[1], " ")
 			switch sl[0] {
 			case "title":
 				page.Title = sl[1]
@@ -307,10 +306,6 @@ func (c *GenerateCommand) Run(args []string) int {
 
 	// Merge root files so one loop is needed
 	rootFilesToRead := append(rootMarkdownFiles, rootHTMLFiles...)
-
-	// build post pages and store in []MarkdownPage maintain order (maybe consider ordering by date?)
-	// build global context struct
-	// build and render pages with the global context.
 
 	log.Println("Parsing posts")
 	for _, file := range postMarkdownFiles {

@@ -20,6 +20,7 @@ This shit will show up in your `$GOPATH/bin`.
 
 All this assumes your project lives under `~/src/my-site`.
 
+### Configuration
 First things first, you will need a `Solarwindfile`. Put this shit `~/src/my-site/Solarwindfile`:
 
 ```
@@ -51,11 +52,18 @@ Markdown post filenames are derived from the title of the post as a slug:
 Add some html and markdown (use .md extension) to your
 `~/src/my-site/content{,posts}` and generate your site:
 
+### Generating the site
+
 `solarwind generate`
 
 All your shit shows up in `~/src/my-site/public`
 
 If you need static assets, just put them in `~/src/my-site/static/{css,js,images}`
 or whatever (really, I just copy that entire dir to `~/src/my-site/public/static`).
+
+### Post ordering
+
+Posts are currently ordered based on the filename. I'm going to later add the
+ability to sort by post date.
 
 Now edit the templates to your liking and draw the rest of the fucking owl.

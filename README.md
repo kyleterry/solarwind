@@ -58,4 +58,4 @@ All your shit shows up in `~/src/my-site/public`
 If you need static assets, just put them in `~/src/my-site/static/{css,js,images}`
 or whatever (really, I just copy that entire dir to `~/src/my-site/public/static`).
 
-K... Have fun.
+Now edit the templates to your liking and draw the rest of the fucking owl.

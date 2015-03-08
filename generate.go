@@ -19,12 +19,6 @@ import (
 	"github.com/russross/blackfriday"
 )
 
-var (
-	pages     []MarkdownPage
-	htmlPages []HTMLPage
-	posts     []MarkdownPage
-)
-
 const (
 	TypeMarkdown = "md"
 	TypeHTML     = "html"
@@ -264,11 +258,15 @@ type GenerateCommand struct {
 }
 
 func (c *GenerateCommand) Help() string {
-	return "help"
+	helpText := `
+usage: solarwind generate
+	This command will build a solarwind project and put everything in ./public.
+	`
+	return helpText
 }
 
 func (c *GenerateCommand) Synopsis() string {
-	return "help"
+	return "Builds a static site from markdown content."
 }
 
 func (c *GenerateCommand) Run(args []string) int {
@@ -279,6 +277,7 @@ func (c *GenerateCommand) Run(args []string) int {
 	log.Println("Making public directory")
 	MakePublicDir(DefaultDestinationDir)
 	context := NewContextFromSolarwindfile(DefaultSolarwindfilePath)
+	var posts []MarkdownPage
 
 	log.Println("Caching templates")
 	// Cache base template content

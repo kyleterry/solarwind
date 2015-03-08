@@ -57,6 +57,11 @@ func main() {
 				Ui: ui,
 			}, nil
 		},
+		"server": func() (cli.Command, error) {
+			return &ServerCommand{
+				Ui: ui,
+			}, nil
+		},
 	}
 
 	exitCode, err := c.Run()

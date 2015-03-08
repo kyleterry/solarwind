@@ -52,6 +52,28 @@ Markdown post filenames are derived from the title of the post as a slug:
 Add some html and markdown (use .md extension) to your
 `~/src/my-site/content{,posts}` and generate your site:
 
+### Markdown and posts
+
+Posts are markdown files with an optional header describing metadata about the
+post. Below is an example of a markdown post:
+
+```markdown
+###
+title: This is the Post Title
+date: 06 Mar 15 13:30 PST
+category: computers
+###
+
+I have long used computers because they rule.
+
+Here I will write another paragraph about computers.
+
+I use [Google](https://google.com) to figure stuff out.
+```
+
+The above text should be stored in something like
+`~/my-site/content/posts/my-computer-post.md`.
+
 ### Generating the site
 
 `solarwind generate`

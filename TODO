@@ -1,4 +1,3 @@
-- Add server and watch abilities for dev
 - Add date formatter template func
 - Change markdown post header to a parsable format from the standard lib
 - Sort posts by date

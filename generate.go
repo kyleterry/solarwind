@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -205,7 +206,7 @@ func MakePublicDir(dir string) {
 	}
 	err := os.MkdirAll(path.Join(dir, "posts"), 0755)
 	if err != nil {
-		log.Fatalf("Could not create dir: %s", err)
+		log.Fatal(err)
 	}
 }
 
@@ -215,6 +216,41 @@ func GenerateHTMLFromMarkdown(rawMarkdown string) string {
 
 func MakeFinalPage(htmlContent string) string {
 	return ""
+}
+
+// Cowboy error handling
+func CopyAssets(source, dest string) {
+	err := os.MkdirAll(dest, 0755)
+	if err != nil {
+		log.Fatal(err)
+	}
+	filepath.Walk(source, func(p string, info os.FileInfo, err error) error {
+		if p == source {
+			return nil
+		}
+		if info.IsDir() {
+			os.Mkdir(path.Join(dest, info.Name()), info.Mode())
+			return nil
+		}
+		new_path := strings.Replace(p, source, dest, 1)
+		r, err := os.Open(p)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer r.Close()
+		w, err := os.Create(new_path)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if _, err := io.Copy(w, r); err != nil {
+			w.Close()
+			log.Fatal(err)
+		}
+		return nil
+	})
 }
 
 // GenerateCommand code
@@ -326,6 +362,9 @@ func (c *GenerateCommand) Run(args []string) int {
 			panic(err)
 		}
 	}
+
+	log.Println("Copying static assets")
+	CopyAssets(DefaultStaticDir, path.Join(DefaultDestinationDir, "static"))
 
 	log.Println("Done!")
 

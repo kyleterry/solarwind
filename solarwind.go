@@ -16,6 +16,7 @@ var (
 	DefaultDestinationDir    string
 	DefaultTemplateDir       string
 	DefaultSolarwindfilePath string
+	DefaultStaticDir         string
 )
 
 const Solarwindfile = "Solarwindfile"
@@ -32,6 +33,7 @@ func init() {
 	DefaultDestinationDir = path.Join(CurrentPath, "public")
 	DefaultTemplateDir = path.Join(dir, "templates")
 	DefaultSolarwindfilePath = path.Join(CurrentPath, Solarwindfile)
+	DefaultStaticDir = path.Join(CurrentPath, "static")
 
 	// Sanity check. Make sure a couple of these things exist
 	for _, node := range []string{DefaultSolarwindfilePath, DefaultContentDir, DefaultPostsDir, DefaultTemplateDir} {

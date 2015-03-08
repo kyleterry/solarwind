@@ -66,4 +66,12 @@ or whatever (really, I just copy that entire dir to `~/src/my-site/public/static
 Posts are currently ordered based on the filename. I'm going to later add the
 ability to sort by post date.
 
+### Development Server
+
+A development server is included. It will watch your content directory for
+changes and regenerate the site when they occur. It optionally takes a -bind
+param but will listen on localhost:8090 by default.
+
+`solarwind server [-bind :8091]`
+
 Now edit the templates to your liking and draw the rest of the fucking owl.

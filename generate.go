@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -24,6 +25,8 @@ const (
 	TypeHTML     = "html"
 )
 
+type Posts []MarkdownPage
+
 type FileMapper struct {
 	SourceFile      string
 	DestinationFile string
@@ -34,7 +37,7 @@ type FileMapper struct {
 type Context struct {
 	SiteTitle       string `json:"site_title"`
 	SiteDescription string `json:"site_description"`
-	Posts           []MarkdownPage
+	Posts           *Posts
 	CurrentPage     MarkdownPage
 }
 
@@ -258,6 +261,24 @@ func CopyAssets(source, dest string) {
 	}
 }
 
+// Sorting
+func SortPostsByDate(posts Posts) Posts {
+	sort.Sort(posts)
+	return posts
+}
+
+func (p Posts) Len() int {
+	return len(p)
+}
+
+func (p Posts) Less(i, j int) bool {
+	return p[i].Date.After(p[j].Date)
+}
+
+func (p Posts) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
 // GenerateCommand code
 type GenerateCommand struct {
 	Ui cli.Ui
@@ -283,7 +304,7 @@ func (c *GenerateCommand) Run(args []string) int {
 	log.Println("Making public directory")
 	MakePublicDir(DefaultDestinationDir)
 	context := NewContextFromSolarwindfile(DefaultSolarwindfilePath)
-	var posts []MarkdownPage
+	var posts Posts
 
 	log.Println("Caching templates")
 	// Cache base template content
@@ -324,7 +345,8 @@ func (c *GenerateCommand) Run(args []string) int {
 		posts = append(posts, post)
 	}
 
-	context.Posts = posts
+	sort.Sort(posts)
+	context.Posts = &posts
 
 	log.Println("Parsing pages and generating site")
 	for _, file := range rootFilesToRead {
@@ -355,7 +377,7 @@ func (c *GenerateCommand) Run(args []string) int {
 		}
 	}
 
-	for _, post := range context.Posts {
+	for _, post := range *context.Posts {
 		context.CurrentPage = post
 		t := template.Must(template.New("page").Parse(string(indexCache) + string(postCache)))
 

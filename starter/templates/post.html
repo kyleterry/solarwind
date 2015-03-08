@@ -2,3 +2,4 @@
 <h1>{{ .CurrentPage.Title }}</h1>
 {{ .CurrentPage.FinalHTML }}
 {{end}}
+{{define "site-title"}}{{ .SiteTitle }}{{ .CurrentPage.Title }}{{end}}

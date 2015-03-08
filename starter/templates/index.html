@@ -1,7 +1,9 @@
 <!doctype html>
 <html>
-  <title>{{ .SiteTitle }}</title>
+  <title>{{template "site-title" .}}</title>
   <head></head>
-  <body>{{template "body" .}}
+  <body>
+    <h1>My Solarwind Site</h1>
+    {{template "body" .}}
   </body>
 </html>

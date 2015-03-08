@@ -51,12 +51,15 @@ type Page interface {
 }
 
 type MarkdownPage struct {
-	Title       string
-	Date        time.Time
-	Category    string
-	Filename    string
-	RawMarkdown string        // This is the Markdown sans header
-	FinalHTML   template.HTML // This is the final HTML after the Markdown parser
+	Title           string
+	Slug            string
+	Date            time.Time
+	Category        string
+	Filename        string
+	DestinationFile string
+	RelLink         string
+	RawMarkdown     string        // This is the Markdown sans header
+	FinalHTML       template.HTML // This is the final HTML after the Markdown parser
 }
 
 type HTMLPage struct {
@@ -141,6 +144,9 @@ func NewMarkdownPage(filename string, rawContent string) MarkdownPage {
 		log.Fatalf("Something went wrong parsing %s: Possible Malformed header. Reached EOF.", filename)
 	}
 	page.RawMarkdown = strings.Join(sd, "\n")
+	page.Slug = slug.Slug(page.Title)
+	page.DestinationFile = path.Join(DefaultDestinationDir, "posts", page.Slug+".html")
+	page.RelLink = "posts/" + page.Slug + ".html"
 	return page
 }
 
@@ -356,8 +362,7 @@ func (c *GenerateCommand) Run(args []string) int {
 		b := &bytes.Buffer{}
 		t.Execute(b, context)
 
-		destinationFile := path.Join(DefaultDestinationDir, "posts", slug.Slug(post.Title)+".html")
-		err = ioutil.WriteFile(destinationFile, b.Bytes(), 0755)
+		err = ioutil.WriteFile(post.DestinationFile, b.Bytes(), 0755)
 		if err != nil {
 			panic(err)
 		}

@@ -77,6 +77,10 @@ func (p MarkdownPage) GetTitle() string {
 	return p.Title
 }
 
+func (p MarkdownPage) FormattedDate() string {
+	return p.Date.Format(time.ANSIC)
+}
+
 func (p HTMLPage) GetType() string {
 	return TypeHTML
 }
@@ -310,17 +314,17 @@ func (c *GenerateCommand) Run(args []string) int {
 	// Cache base template content
 	indexCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "index.html"))
 	if err != nil {
-		log.Fatal("There was an error reading the index.html file")
+		log.Fatal(err)
 	}
 
 	pageCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "page.html"))
 	if err != nil {
-		log.Fatal("There was an error reading the page.html file")
+		log.Fatal(err)
 	}
 
 	postCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "post.html"))
 	if err != nil {
-		log.Fatal("There was an error reading the post.html file")
+		log.Fatal(err)
 	}
 
 	log.Println("Collecting content")

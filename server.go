@@ -28,6 +28,11 @@ func watch() {
 		log.Fatal(err)
 	}
 
+	err = watcher.Watch(DefaultTemplateDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for {
 		select {
 		case <-watcher.Event:

@@ -90,9 +90,9 @@ ability to sort by post date.
 
 ### Development Server
 
-A development server is included. It will watch your content directory for
-changes and regenerate the site when they occur. It optionally takes a -bind
-param but will listen on localhost:8090 by default.
+A development server is included. It will watch your content, templates, and
+static directories for changes and regenerate the site when they occur.
+It optionally takes a -bind param but will listen on localhost:8090 by default.
 
 `solarwind server [-bind :8091]`
 

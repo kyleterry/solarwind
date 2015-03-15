@@ -4,13 +4,16 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/howeyc/fsnotify"
 	"github.com/mitchellh/cli"
 )
 
 // Goroutine to watch for file changes and regenerate the site
+// TODO: clean up the error handling in this function
 func watch() {
 	log.Println("Watching for changes...")
 	watcher, err := fsnotify.NewWatcher()
@@ -29,6 +32,19 @@ func watch() {
 	}
 
 	err = watcher.Watch(DefaultTemplateDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = filepath.Walk(DefaultStaticDir, func(p string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			err = watcher.Watch(p)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

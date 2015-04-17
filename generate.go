@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	TypeMarkdown = "md"
-	TypeHTML     = "html"
+	TypeMarkdown     = "md"
+	TypeMarkdownLong = "markdown"
+	TypeHTML         = "html"
 )
 
 type Posts []MarkdownPage
@@ -180,6 +181,13 @@ func NewContextFromSolarwindfile(path string) *Context {
 	return context
 }
 
+func IsMarkdown(ext string) bool {
+	if ext == TypeMarkdown || ext == TypeMarkdownLong {
+		return true
+	}
+	return false
+}
+
 func ListFiles(dir string, extension string) []FileMapper {
 	files, err := filepath.Glob(fmt.Sprintf("%s/*.%s", dir, extension))
 	if err != nil {
@@ -322,9 +330,13 @@ func (c *GenerateCommand) Run(args []string) int {
 	}
 
 	log.Println("Collecting content")
-	rootMarkdownFiles := ListFiles(DefaultContentDir, TypeMarkdown)
+	rootShortMarkdownFiles := ListFiles(DefaultContentDir, TypeMarkdown)
+	rootLongMarkdownFiles := ListFiles(DefaultContentDir, TypeMarkdownLong)
+	rootMarkdownFiles := append(rootShortMarkdownFiles, rootLongMarkdownFiles...)
 	rootHTMLFiles := ListFiles(DefaultContentDir, TypeHTML)
-	postMarkdownFiles := ListFiles(DefaultPostsDir, TypeMarkdown)
+	postShortMarkdownFiles := ListFiles(DefaultPostsDir, TypeMarkdown)
+	postLongMarkdownFiles := ListFiles(DefaultPostsDir, TypeMarkdownLong)
+	postMarkdownFiles := append(postShortMarkdownFiles, postLongMarkdownFiles...)
 	fileCount := len(rootMarkdownFiles) + len(rootHTMLFiles) + len(postMarkdownFiles)
 	log.Printf("Found %d files", fileCount)
 
@@ -353,7 +365,7 @@ func (c *GenerateCommand) Run(args []string) int {
 			log.Fatalf("There was an error reading the file: %s", err)
 		}
 		var page Page
-		if file.Filetype == TypeMarkdown {
+		if IsMarkdown(file.Filetype) {
 			md := NewMarkdownPage(file.Filename, string(content))
 			md.FinalHTML = template.HTML(GenerateHTMLFromMarkdown(md.RawMarkdown))
 			page = md

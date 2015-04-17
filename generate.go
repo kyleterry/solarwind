@@ -309,22 +309,16 @@ func (c *GenerateCommand) Run(args []string) int {
 	MakePublicDir(DefaultDestinationDir)
 	context := NewContextFromSolarwindfile(DefaultSolarwindfilePath)
 	var posts Posts
+	templateCache := make(map[string][]byte)
 
 	log.Println("Caching templates")
-	// Cache base template content
-	indexCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "index.html"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pageCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "page.html"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	postCache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, "post.html"))
-	if err != nil {
-		log.Fatal(err)
+	for _, tmpl_file := range []string{"index.html", "page.html", "post.html"} {
+		name := strings.SplitN(tmpl_file, ".", 2)[0]
+		cache, err := ioutil.ReadFile(path.Join(DefaultTemplateDir, tmpl_file))
+		if err != nil {
+			panic(err)
+		}
+		templateCache[name] = cache
 	}
 
 	log.Println("Collecting content")
@@ -369,7 +363,7 @@ func (c *GenerateCommand) Run(args []string) int {
 			page = html
 		}
 
-		t := template.Must(template.New("page").Parse(string(indexCache) + string(pageCache) + string(page.GetFinalHTML())))
+		t := template.Must(template.New("page").Parse(string(templateCache["index"]) + string(templateCache["page"]) + string(page.GetFinalHTML())))
 
 		// TODO: make custom io.Writer to write the template directly to a file
 		b := &bytes.Buffer{}
@@ -383,12 +377,12 @@ func (c *GenerateCommand) Run(args []string) int {
 
 	for _, post := range *context.Posts {
 		context.CurrentPage = post
-		t := template.Must(template.New("page").Parse(string(indexCache) + string(postCache)))
+		t := template.Must(template.New("page").Parse(string(templateCache["index"]) + string(templateCache["post"])))
 
 		b := &bytes.Buffer{}
 		t.Execute(b, context)
 
-		err = ioutil.WriteFile(post.DestinationFile, b.Bytes(), 0755)
+		err := ioutil.WriteFile(post.DestinationFile, b.Bytes(), 0755)
 		if err != nil {
 			panic(err)
 		}

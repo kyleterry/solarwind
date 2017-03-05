@@ -284,7 +284,7 @@ func (p Posts) Len() int {
 }
 
 func (p Posts) Less(i, j int) bool {
-	return p[i].Date.Before(p[j].Date)
+	return p[i].Date.After(p[j].Date)
 }
 
 func (p Posts) Swap(i, j int) {

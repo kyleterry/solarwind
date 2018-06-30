@@ -2,6 +2,7 @@ pipeline:
   build:
     image: plugins/docker
     commands: [ make build ]
+    custom_dns: [ 1.1.1.1, 8.8.8.8 ]
   
   publish:
     image: plugins/docker

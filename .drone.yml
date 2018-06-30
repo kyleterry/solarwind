@@ -2,6 +2,7 @@ pipeline:
   docker:
     image: plugins/docker
     repo: kyleterry/solarwind
+    secrets: [ docker_username, docker_password ]
     custom_dns: [ 1.1.1.1, 8.8.8.8 ]
     tag: [ latest ]
     when:

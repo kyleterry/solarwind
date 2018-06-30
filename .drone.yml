@@ -1,0 +1,12 @@
+pipeline:
+  build:
+    image: golang
+    commands: [ make build ]
+  
+  publish:
+    image: plugins/docker
+    repo: kyleterry/solarwind
+    tag: [ latest ]
+    when:
+      branch: master
+      event: push

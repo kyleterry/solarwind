@@ -1,6 +1,6 @@
 pipeline:
   build:
-    image: golang
+    image: plugins/docker
     commands: [ make build ]
   
   publish:
